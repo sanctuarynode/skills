@@ -1,6 +1,6 @@
 ---
 name: elysia-zod
-description: Decode Elysia + Zod validation errors fast. Use when an HTTP request to an Elysia backend returns 4xx (especially 400 or 422) and the response body/logs contain a Zod valueError/customError. Maps the six most common error shapes to their exact fixes — z.coerce.date for ISO-string dates, .nullable().optional() for nullable columns, no-user-identity auth hitting a user FK, public-route global-guard leak, and an auth-library permission layer that's separate from your role check — so you don't have to re-read 4KB of nested validator JSON every time. Assumes drizzle-zod (createInsertSchema/createSelectSchema); adapt for hand-written schemas.
+description: Decode Elysia + Zod validation errors fast. Use when an HTTP request to an Elysia backend returns 4xx (especially 400 or 422) and the response body/logs contain a Zod valueError/customError. Maps the six most common error shapes to their exact fixes. Assumes drizzle-zod (createInsertSchema/createSelectSchema); adapt for hand-written schemas.
 ---
 
 # Elysia + Zod validation debug checklist

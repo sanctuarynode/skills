@@ -1,6 +1,6 @@
 ---
 name: next-mutations
-description: Write data in a Next.js App Router app the canonical way — a server action that throws on failure, triggered from the client with useTransition (simple) or useMutation (optimistic), forms via TanStack Form + Zod, feedback via toast (Sonner). Use when the user adds a create/update/delete, a form + submit, says "mutate", "submit form", "optimistic update", "toast on success", "invalidate cache after a write", "rollback on error", or asks how to handle pending state or form validation. Covers the mutation server action (throw a human message, updateTag), useTransition vs useMutation, the Insert/Patch/Remove optimistic shapes + toggle variant + when NOT to, and TanStack Form + Zod field validation. Pairs with `next-fetching-query` for reads + cache tags.
+description: Write data in a Next.js App Router app the canonical way — a server action that throws on failure, triggered from the client with useTransition (simple) or useMutation (optimistic), forms via TanStack Form + Zod, feedback via toast (Sonner). Use when the user adds a create/update/delete, a form + submit, says "mutate", "submit form", "optimistic update", "toast on success", "invalidate cache after a write", "rollback on error", or asks how to handle pending state or form validation. Pairs with `next-fetching-query` for reads + cache tags.
 ---
 
 # Next.js + TanStack Query: mutations & forms

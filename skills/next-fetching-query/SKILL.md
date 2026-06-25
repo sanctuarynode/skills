@@ -1,6 +1,6 @@
 ---
 name: next-fetching-query
-description: Fetch data in a Next.js App Router app the canonical way — server-component prefetch + TanStack Query hydration + client useQuery on the SAME key. Use when the user adds a data read, a list/table page, a server action that fetches, or a useQuery hook; says "fetch X", "load data for", "prefetch", "hydrate", "why does my query refetch on first paint", "table blanks when I search"; or hits a hydration mismatch or a double round-trip. Covers the fetching server action ('use cache' + cacheTag + cacheLife), prefetch in page.tsx with HydrationBoundary, client useQuery with isPending skeleton, typed API-client (Eden) call syntax, parallel queries, and keepPreviousData for filtered list tables. Pairs with `next-mutations` for writes + cache invalidation.
+description: Fetch data in a Next.js App Router app the canonical way — server-component prefetch + TanStack Query hydration + client useQuery on the SAME key. Use when the user adds a data read, a list/table page, a server action that fetches, or a useQuery hook; says "fetch X", "load data for", "prefetch", "hydrate", "why does my query refetch on first paint", "table blanks when I search"; or hits a hydration mismatch or a double round-trip. Pairs with `next-mutations` for writes + cache invalidation.
 ---
 
 # Next.js + TanStack Query: fetching

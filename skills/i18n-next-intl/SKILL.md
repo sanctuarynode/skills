@@ -1,6 +1,6 @@
 ---
 name: i18n-next-intl
-description: Keep next-intl translations in sync across every locale. Use whenever you add or change a user-facing string — a new t("...") call, a useTranslations namespace, a toast, a button or form-field label, a dialog title/description, or an error message. next-intl ships one JSON message file per locale; touch one locale and the others render the literal {namespace}.{key} at runtime. This skill enforces editing every locale together, the namespace/placeholder conventions, and how to verify no key is missing.
+description: Keep next-intl translations in sync across every locale. Use whenever you add or change a user-facing string — a new t("...") call, a useTranslations namespace, a toast, a button or form-field label, a dialog title/description, or an error message. next-intl ships one JSON message file per locale; touch one locale and the others render the literal {namespace}.{key} at runtime.
 ---
 
 # next-intl: keep every locale in sync

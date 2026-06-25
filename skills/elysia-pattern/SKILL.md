@@ -1,6 +1,6 @@
 ---
 name: elysia-pattern
-description: Scaffold a new Elysia + Drizzle + Zod backend module following the canonical CRUD convention — a service class, a routes file, and a one-line registration. Use when the user says "add a new module/resource/table to the backend", "create a service for X", "add CRUD endpoints for Y", or needs a new Elysia route group backed by a Drizzle service. Covers the service shape (returnable columns, transactional mutations, the .for("update") state-transition idiom), route wiring (httpExceptionPlugin, .model(), Zod body/response), registration order (public before authed), and naming conventions.
+description: Scaffold a new Elysia + Drizzle + Zod backend module the canonical way — a service class, a routes file, and a one-line registration in the aggregator. Use when the user says "add a new module/resource/table to the backend", "create a service for X", "add CRUD endpoints for Y", or needs a new Elysia route group backed by a Drizzle service.
 ---
 
 # Elysia module convention

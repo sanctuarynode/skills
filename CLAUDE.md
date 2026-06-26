@@ -31,7 +31,7 @@ Published as `sanctuarynode/skills` (see the install commands in `README.md`).
    project-specific (a glossary, an internal path), say so explicitly and point at the consuming repo rather
    than hardcoding it.
 
-The current skills (`elysia-pattern`, `elysia-zod`, `next-fetching-query`, `next-mutations`, `i18n-next-intl`)
+The current skills (`elysia-pattern`, `elysia-zod`, `next-queries`, `next-mutations`, `i18n-next-intl`)
 are the reference for tone, structure, and description density — read one before writing a new one.
 
 ## CLI commands

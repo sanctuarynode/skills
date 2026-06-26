@@ -1,24 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "decision-mapping": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "skillPath": "skills/in-progress/decision-mapping/SKILL.md",
-      "computedHash": "cf7a7fcc1809bdaa095ece92a8aa785f84f1ef60896697ddb7db5a063e1606f7"
-    },
-    "handoff": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "skillPath": "skills/productivity/handoff/SKILL.md",
-      "computedHash": "b7c38b5061b73217e5478f9446fc403be17ce311d4c23a108cc37b5b4604fa37"
-    },
-    "loop-me": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "skillPath": "skills/in-progress/loop-me/SKILL.md",
-      "computedHash": "c36514ed0c932e8e245149a678f72de0cf2c3858612e2b4b7ec244e0070bf430"
-    },
     "writing-great-skills": {
       "source": "mattpocock/skills",
       "sourceType": "github",

@@ -14,7 +14,7 @@ src/modules/<name>/
 src/modules/routes.ts # aggregator — one .use(<name>Routes)
 ```
 
-Reach for the simplest existing module in the repo as your reference before inventing a new shape.
+Reach for the simplest existing module in the repo as your reference before inventing a new shape. If the repo has none yet, [`examples/widget/`](examples/widget/) is a complete, concrete module — real names, the `/:id` group fully wired, one state transition — to copy the shape from.
 
 ## File 1 — `<name>.service.ts`
 

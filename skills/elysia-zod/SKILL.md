@@ -101,4 +101,4 @@ A structured logger (pino, etc.) dumps the full validator schema on every 422. D
 2. `"path":` — the field that failed, e.g. `["data", 0, "items", 0, "createdAt"]`
 3. `"type": "body"` vs `"type": "response"` — tells you whether to fix the request schema (cases 1, 4) or the response schema (cases 2, 3)
 
-That's enough to pick the right fix above.
+That's enough to pick the right fix above. `scripts/extract-error.sh < your.log` filters a pasted dump down to just these three lines; [`reference.md`](reference.md) walks one full annotated dump through to its matching case.

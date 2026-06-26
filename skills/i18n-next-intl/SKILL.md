@@ -54,16 +54,10 @@ next-intl doesn't type-check key existence by default. If you wire up a typed-me
 
 ## Verify nothing is missing
 
-Any key referenced in source but absent from a locale file — or present in one locale but not another — is a shipping bug. Diff the key sets:
+A key present in one locale but not another is a shipping bug. Run the bundled check — it diffs every locale's key tree against the reference (en.json, or the first file) and exits non-zero on any missing/extra key:
 
 ```bash
-# every t("...") key referenced in source
-grep -roh 't("[^"]\+"' src | sort -u
-
-# keys present in each locale file — compare the outputs (repeat per locale)
-jq -r 'paths(scalars) | join(".")' i18n/messages/en.json | sort > /tmp/en.keys
-jq -r 'paths(scalars) | join(".")' i18n/messages/id.json | sort > /tmp/id.keys
-diff /tmp/en.keys /tmp/id.keys   # must be empty
+scripts/check-locales.sh [MESSAGES_DIR]   # default MESSAGES_DIR: i18n/messages
 ```
 
-Run this for every locale pair; a non-empty diff is a missing-key bug to fix before shipping.
+A clean run is the completion criterion — don't ship on a non-empty diff. To also catch keys referenced in source but never defined, grep them out (`grep -roh 't("[^"]\+"' src | sort -u`) and eyeball against a locale file — this is a heuristic, since `useTranslations("ns")` makes `t("key")` resolve to the full path `ns.key`.

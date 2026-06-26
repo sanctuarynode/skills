@@ -80,7 +80,7 @@ export class <Name>Service {
 }
 ```
 
-> **Scoped / multi-tenant projects:** if rows belong to an org, user, or workspace, put the scope filter in *one* place — a `scope(table, ...extra)` helper or a base class the service extends — and apply it to every `where`. Never hand-copy the same `eq(table.orgId, …)` into each method; that's how one forgotten filter leaks another tenant's data.
+> **Scoped / multi-tenant projects:** if rows belong to an org, user, or workspace, put the scope filter in _one_ place — a `scope(table, ...extra)` helper or a base class the service extends — and apply it to every `where`. Never hand-copy the same `eq(table.orgId, …)` into each method; that's how one forgotten filter leaks another tenant's data.
 
 ### State-transition methods (`/approve`, `/cancel`, `/confirm`, …)
 
@@ -166,7 +166,7 @@ import { <name>Routes } from "./<name>/<name>.routes";
 .use(<name>Routes)
 ```
 
-**Order matters:** mount **public routes before authed ones**. An auth plugin that uses `.guard({ as: "global" })` propagates its guard downward to every sibling registered *after* it — so a public route mounted after an authed sibling starts demanding auth. See the `elysia-zod` skill, case 5.
+**Order matters:** mount **public routes before authed ones**. An auth plugin that uses `.guard({ as: "global" })` propagates its guard downward to every sibling registered _after_ it — so a public route mounted after an authed sibling starts demanding auth. See the `elysia-zod` skill, case 5.
 
 ## Naming conventions
 

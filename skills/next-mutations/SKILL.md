@@ -30,17 +30,16 @@ Mutation actions **throw** (they don't return `{ error }` like fetching actions)
 "use server";
 
 import { updateTag } from "next/cache";
-import { createApi } from "@/lib/api";
+import { api } from "@/lib/api";
 import { log } from "@/lib/log";
 import type { CreateThing } from "@/lib/schema";
 
 export async function createThing(orgSlug: string, body: CreateThing) {
-  const api = createApi();
   const { data, error } = await api.things.post(body);
 
   if (error) {
     log.error({ action: "createThing", scope: orgSlug, error }); // internal only
-    throw new Error("Failed to create thing. Please try again.");  // → toast text
+    throw new Error("Failed to create thing. Please try again."); // → toast text
   }
 
   updateTag(`${orgSlug}:things`); // invalidate the read cache (see next-fetching-query)
@@ -73,7 +72,11 @@ export function CreateThingButton({ orgSlug }: { orgSlug: string }) {
     });
   }
 
-  return <Button onClick={handleCreate} disabled={isPending}>{isPending ? "Saving…" : "Create"}</Button>;
+  return (
+    <Button onClick={handleCreate} disabled={isPending}>
+      {isPending ? "Saving…" : "Create"}
+    </Button>
+  );
 }
 ```
 
@@ -92,7 +95,13 @@ import { toast } from "sonner";
 import { createThing } from "@/actions/things";
 import { createThingSchema } from "@/lib/schema";
 
-export function CreateThingForm({ orgSlug, onSuccess }: { orgSlug: string; onSuccess?: () => void }) {
+export function CreateThingForm({
+  orgSlug,
+  onSuccess,
+}: {
+  orgSlug: string;
+  onSuccess?: () => void;
+}) {
   const [isPending, startTransition] = useTransition();
 
   const form = useForm({
@@ -112,7 +121,13 @@ export function CreateThingForm({ orgSlug, onSuccess }: { orgSlug: string; onSuc
   });
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); form.handleSubmit(); }} className="flex flex-col gap-4">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+      className="flex flex-col gap-4"
+    >
       <form.Field name="name">
         {(field) => {
           const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
@@ -131,7 +146,9 @@ export function CreateThingForm({ orgSlug, onSuccess }: { orgSlug: string; onSuc
           );
         }}
       </form.Field>
-      <Button type="submit" disabled={isPending}>{isPending ? "Saving…" : "Save"}</Button>
+      <Button type="submit" disabled={isPending}>
+        {isPending ? "Saving…" : "Save"}
+      </Button>
     </form>
   );
 }
@@ -142,9 +159,9 @@ export function CreateThingForm({ orgSlug, onSuccess }: { orgSlug: string; onSuc
 ```ts
 import { toast } from "sonner";
 
-toast.loading("Saving…", { id: "op" });          // spinner
-toast.success("Saved", { id: "op" });             // replace the same toast
-toast.error("Failed to save", { id: "op" });      // replace with error
+toast.loading("Saving…", { id: "op" }); // spinner
+toast.success("Saved", { id: "op" }); // replace the same toast
+toast.error("Failed to save", { id: "op" }); // replace with error
 toast.error("Failed to create", { description: err.message }); // supplementary detail
 ```
 
@@ -152,7 +169,7 @@ Pass an `id` to update/replace a loading toast in place.
 
 ## Optimistic updates — `useMutation`
 
-When a mutation touches a **cached list query**, prefer `useMutation` with `onMutate`/`onError`/`onSettled` over `useTransition`. The row appears (and the dialog closes) *before* the network finishes; on failure you roll back to the pre-mutation snapshot.
+When a mutation touches a **cached list query**, prefer `useMutation` with `onMutate`/`onError`/`onSettled` over `useTransition`. The row appears (and the dialog closes) _before_ the network finishes; on failure you roll back to the pre-mutation snapshot.
 
 ```
 mutation.mutate(value)
@@ -176,7 +193,7 @@ const KEY = ["things"] as const;
 const mutation = useMutation({
   mutationFn: (value: ThingValues) => createThing(orgSlug, value),
   onMutate: async (value) => {
-    await queryClient.cancelQueries({ queryKey: KEY });           // 1. stop competing refetch
+    await queryClient.cancelQueries({ queryKey: KEY }); // 1. stop competing refetch
     const snapshots = queryClient.getQueriesData({ queryKey: KEY }); // 2. snapshot EVERY variant
     const optimisticRow = { id: `optimistic-${value.name}`, ...value }; // 3. write the change
     for (const [key, data] of snapshots) {
@@ -187,18 +204,23 @@ const mutation = useMutation({
         pagination: { ...data.pagination, totalItems: data.pagination.totalItems + 1 },
       });
     }
-    return { snapshots };                                          // 4. rollback context
+    return { snapshots }; // 4. rollback context
   },
   onError: (error, _value, ctx) => {
     ctx?.snapshots.forEach(([key, data]) => queryClient.setQueryData(key, data));
     toast.error(error instanceof Error ? error.message : "Something went wrong");
   },
-  onSuccess: () => { toast.success("Saved"); form.reset(); onOpenChange(false); },
+  onSuccess: () => {
+    toast.success("Saved");
+    form.reset();
+    onOpenChange(false);
+  },
   onSettled: () => void queryClient.invalidateQueries({ queryKey: KEY }),
 });
 ```
 
 **Rules:**
+
 - The fake `id` (`optimistic-…`) just keeps the row unique for React's key — `onSettled`'s refetch replaces it with the real server id.
 - Use **`getQueriesData` (plural)** — a paginated list has many cache entries (different `page`/`limit`/filter suffixes under one key prefix). Snapshot and write **all** of them so the change shows whatever page/filter the user is on, and rollback restores every one. (For a single non-paginated query, use singular `getQueryData`/`setQueryData`.)
 - `onSettled` runs after success **and** error, so invalidation always happens — don't also call it from `onSuccess`.
@@ -233,7 +255,7 @@ onSuccess: (next) => queryClient.setQueryData(KEY, next),
 
 ### When NOT to use optimistic updates
 
-- **Single-record edits where the form *is* the data** (a profile panel) — no list to roll back; just refetch/echo on success.
+- **Single-record edits where the form _is_ the data** (a profile panel) — no list to roll back; just refetch/echo on success.
 - **Server-derived values you can't guess** — e.g. create-api-key, where the server mints the id/prefix/one-time secret the dialog must show. Invalidate on success instead.
 - **Provider-level switches** (locale/theme) — these re-render from a provider, not a cached list.
 - **Mutations that may take >2s** — show a real loading state instead of faking instant success.

@@ -15,7 +15,7 @@ Published as `sanctuarynode/skills` (see the install commands in `README.md`).
 
 - `skills/<skill-name>/SKILL.md` — one authored skill per directory. These are the repo's actual content.
 - `.agents/skills/` and `.claude/skills/` — **install artifacts**, not authored content. They hold skills
-  pulled in from *other* repos (e.g. `mattpocock/skills`, `github/awesome-copilot`) for local use, tracked
+  pulled in from _other_ repos (e.g. `mattpocock/skills`, `github/awesome-copilot`) for local use, tracked
   in `skills-lock.json`. Do not author new skills here; author under `skills/`.
 
 ## Authoring a skill (the core task in this repo)

@@ -21,13 +21,13 @@ export const insert<Entity>Schema = createInsertSchema(<table>)
   });
 ```
 
-Apply to every datetime field in any *insert* or *update* schema.
+Apply to every datetime field in any _insert_ or _update_ schema.
 
 ## 2. `"expected date, received string"` on a response body
 
 **Symptom**: a list/`GET` endpoint returns 422. The service builds child rows via a SQL aggregation (e.g. `sql<X[]>\`json_build_object('createdAt', ${t.createdAt}, ...)\``) → the DB serializes timestamps as strings → the response schema declares `z.date()` → mismatch.
 
-**Fix**: coerce the timestamps in the *response* schema for the aggregated child:
+**Fix**: coerce the timestamps in the _response_ schema for the aggregated child:
 
 ```ts
 export const select<Child>Schema = createSelectSchema(<childTable>).extend({
@@ -75,10 +75,10 @@ Same fix for any column not marked `.notNull()` in the model.
 ```ts
 export const routes = new Elysia({ name: "routes" })
   .use(healthRoutes)
-  .use(publicInviteRoutes)   // ← public first
-  .use(brandRoutes)          // these all .use(authPlugin)
-  .use(authedInviteRoutes)
-  // ...
+  .use(publicInviteRoutes) // ← public first
+  .use(brandRoutes) // these all .use(authPlugin)
+  .use(authedInviteRoutes);
+// ...
 ```
 
 Elysia's global guards propagate **downward** from where they're registered — order is the fix.

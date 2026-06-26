@@ -23,7 +23,7 @@ page.tsx (dynamic server component)
           (always handle isPending → <Skeleton>)
 ```
 
-**Read it as:** the server prefetches under a `queryKey` and hands the serialized cache to `<HydrationBoundary>`; the client `useQuery` uses the *identical* key + queryFn, finds the prefetched entry, and paints without a second round-trip. Scope (org/workspace/user) is resolved **once on the server** and passed down — server actions never read cookies/headers/session themselves.
+**Read it as:** the server prefetches under a `queryKey` and hands the serialized cache to `<HydrationBoundary>`; the client `useQuery` uses the _identical_ key + queryFn, finds the prefetched entry, and paints without a second round-trip. Scope (org/workspace/user) is resolved **once on the server** and passed down — server actions never read cookies/headers/session themselves.
 
 > The `orgSlug` / `scope` segment below is for multi-tenant apps. If your app isn't scoped, drop it from the cache tag and query key.
 
@@ -43,14 +43,13 @@ page.tsx (dynamic server component)
 
 import { cacheLife, cacheTag } from "next/cache";
 import { log } from "@/lib/log";
-import { createApi } from "@/lib/api"; // your typed client factory
+import { api } from "@/lib/api"; // your typed client
 
 export async function getThings(orgSlug: string) {
   "use cache";
   cacheTag(`${orgSlug}:things`); // tag format: "{scope}:{resource}"
-  cacheLife("hours");            // presets: minutes | hours | days | weeks | max
+  cacheLife("hours"); // presets: minutes | hours | days | weeks | max
 
-  const api = createApi();
   const { data, error } = await api.things.get(); // GET /things
 
   if (error) {
@@ -111,25 +110,21 @@ export function ThingTable({ orgSlug }: { orgSlug: string }) {
 
 ## Typed API client (Eden) call syntax
 
-Get the client from a factory (`createApi()`), never a shared singleton.
+Import the typed client (`api`) from `@/lib/api` — the exact module shape is project-specific.
 
 ```ts
-const api = createApi();
+import { api } from "@/lib/api";
+
 const { data, error } = await api.things.get();
 const { data, error } = await api.things.post(body);
 
 // dynamic path params — use FUNCTION CALL syntax, never bracket notation
-const { data } = await api.organizations({ id: orgId }).get();   // ✅ → /organizations/:id
+const { data } = await api.organizations({ id: orgId }).get(); // ✅ → /organizations/:id
 // api.organizations[orgId].get()                                // ❌ wrong
 const { data } = await api.things({ thingId }).logs({ logId }).get(); // nested params
 ```
 
-**Server-only:** when calling the backend from a server component/action without a service key, forward the request cookie so the backend can verify the session:
-
-```ts
-const h = await headers();
-const api = createApi({ cookie: h.get("cookie") ?? "" });
-```
+**Server-only:** when calling the backend from a server component/action without a service key, the client must forward the request cookie so the backend can verify the session. How that's wired (a per-request client, a header argument, etc.) is project-specific — check your `@/lib/api` setup.
 
 ## Parallel queries — never `await` in a loop
 
@@ -137,8 +132,12 @@ Run independent reads concurrently with named results (e.g. `better-all`) or `Pr
 
 ```ts
 const { rows, count } = await all({
-  async rows() { return db.select().from(thing).where(filters); },
-  async count() { return db.$count(thing, filters); },
+  async rows() {
+    return db.select().from(thing).where(filters);
+  },
+  async count() {
+    return db.$count(thing, filters);
+  },
 });
 
 // fan-out over a collection

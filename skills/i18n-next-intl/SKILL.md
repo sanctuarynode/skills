@@ -12,6 +12,7 @@ A next-intl app stores one JSON message file per locale — commonly `i18n/messa
 **Every time you add or modify a translation key, edit it in EVERY locale file in the same change. Never one without the others.**
 
 This applies to:
+
 - Adding a new `t("some.key")` call in any component
 - Adding a `useTranslations("<namespace>")` namespace
 - Adding a `<FormField>` label, placeholder, or description

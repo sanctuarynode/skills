@@ -11,13 +11,17 @@ import {
 import z from "zod";
 
 import { baseQuerySchema, paginationResponseSchema } from "../../lib/schema";
+import { authPlugin } from "../auth/auth.plugin";
 import { createWidgetSchema, selectWidgetSchema, updateWidgetSchema } from "./widget.schema";
 import { WidgetService } from "./widget.service";
 
 export const widgetRoutes = new Elysia({ name: "widget", prefix: "/widgets", tags: ["Widget"] })
+  .use(authPlugin) // resolves organizationId/role/userId
   .use(httpExceptionPlugin()) // maps thrown exceptions to the right HTTP status
   .model({ Widget: selectWidgetSchema }) // keeps typed-client inference working
-  .resolve(() => ({ service: new WidgetService() }))
+  .resolve(({ organizationId, role, userId }) => ({
+    service: new WidgetService({ role, userId, organizationId }),
+  }))
   .get(
     "",
     async ({ query, status, service }) => {

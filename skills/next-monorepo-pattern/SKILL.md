@@ -1,11 +1,11 @@
 ---
 name: next-monorepo-pattern
-description: Use when adding a Next.js App Router route/page, creating a form or dialog, building a list/table component, adding a data fetch or mutation, or deciding where a component/hook/util belongs in a Next.js monorepo with a shared packages/ui. Use when unsure whether something is a server or client component, whether a form should be role-specific or shared, or whether code belongs in packages/ui, an app's components/, or a route's _components/.
+description: Use when working in a Next.js App Router monorepo with a shared packages/ui — adding a route/page, a data fetch or mutation, a form or dialog, a list/table component, or deciding where a component/hook/util belongs. Use when the user says "fetch X", "load data for", "prefetch", "hydrate", "table blanks when I search", "mutate", "submit form", "optimistic update", "toast on success", "invalidate cache after a write", "rollback on error", or asks where a component/hook/util/page should live, whether something is server or client, or whether a form should be role-specific.
 ---
 
-# Next.js monorepo: where things go
+# Next.js monorepo: structure, fetching, and mutations
 
-One Next.js app's file layout, and the priority order for deciding where a component, hook, or utility belongs relative to the monorepo's shared `packages/ui`. Every app in the monorepo follows this same shape.
+One Next.js app's file layout, the priority order for deciding where a component/hook/util belongs relative to the monorepo's shared `packages/ui`, and the canonical read/write data pattern. Every app in the monorepo follows this same shape.
 
 ```
 apps/<app>/
@@ -21,7 +21,7 @@ apps/<app>/
 │  └─ <resource>/table|list/       cross-role shared table/list: invoice-table.tsx
 ├─ hooks/                          generic hooks, shared across routes (this app)
 ├─ lib/
-│  ├─ data/*.ts                    fetching — "use cache" only if cache components is on
+│  ├─ data/*.ts                    fetching — "use cache" + cacheTag + cacheLife
 │  ├─ action/*.ts                  mutations — throw on failure, updateTag on success
 │  └─ utils.ts                     generic helpers, shared across routes (this app)
 ├─ i18n/                           translations — owned entirely by this app
@@ -61,26 +61,25 @@ Forms don't live under a route's `_components/`, because the same form is often 
 - Every form component takes a `className` prop, so it renders correctly whether it's opened in a dialog or a full page.
 - **Dialog wrapper is route-local.** If a route shows the form as a dialog, that wrapper lives at `_components/<dialog>-<create|update|delete>-<resource>.tsx` on that route — it renders the dialog shell and the shared form component inside it. The dialog wrapper is route-specific; the form it wraps is not.
 
-```
-app/dashboard/invoices/
-  _components/dialog-create-invoice.tsx     <- route-local: opens the dialog, renders the form
-components/admin/invoices/
-  create-invoice.tsx                        <- shared: the actual form, takes `className`
-```
+See [`examples/`](examples/) for a complete worked resource — fetching, the route, and this exact dialog/form split — real files to copy the shape from (each carries a `Place at:` comment with its real path): [`create-dialog.tsx`](examples/create-dialog.tsx) wraps [`create-form.tsx`](examples/create-form.tsx).
 
 ## Lists and tables — same modularity as forms
 
-If the exact same list/table UI is rendered on more than one route, it's generic — pull it out of `_components/` into `components/<resource>/table/<resource>.tsx` (or `.../list/...`). If it's genuinely one route's layout, it can stay in that route's `_components/`.
+If the exact same list/table UI is rendered on more than one route, it's generic — pull it out of `_components/` into `components/<resource>/table/<resource>.tsx` (or `.../list/...`). If it's genuinely one route's layout, it can stay in that route's `_components/` — see [`examples/table.tsx`](examples/table.tsx) for the route-local case.
 
-## Data: fetching and mutations
+## Fetching — server prefetch → hydration → client `useQuery`
 
-Fetching and mutations are split from UI entirely, and split from each other:
+Reads flow **server component prefetch → TanStack Query hydration → client `useQuery` on the identical key**. Fetching functions live in `lib/data/*.ts`, always use `"use cache"` + `cacheTag` + `cacheLife` (cache components is a required `next.config.ts` setting for this convention — see [`references/fetching.md`](references/fetching.md) if it isn't enabled yet), and never read cookies/headers/session directly.
 
-- **Fetching** → `lib/data/*.ts`. Use `"use cache"` + `cacheTag` + `cacheLife` **only if** `next.config.ts` has cache components enabled — check before adding these directives, don't assume they're always on.
-- **Mutations** → `lib/action/*.ts`. Throw a human-readable error on failure; on success call `updateTag` with the same tag the corresponding `lib/data` fetch uses.
-- Route-local `action.ts` (used by only one route) follows the same throw/updateTag contract — it's just not promoted to `lib/action/` because nothing else needs it.
+Full pattern, rules, and gotchas (typed API client call syntax, parallel queries, `keepPreviousData` for filtered tables, cache invalidation): [`references/fetching.md`](references/fetching.md).
+Worked files: [`fetching.ts`](examples/fetching.ts), [`page.tsx`](examples/page.tsx), [`table.tsx`](examples/table.tsx).
 
-For the full read/write implementation pattern (server-action shape, TanStack Query hydration, optimistic mutations, toast conventions), see `next-queries` and `next-mutations` — this skill only governs *where* that code lives, not how it's written.
+## Mutations — server action throws → toast
+
+Writes are a **server action that throws on failure** (the thrown message becomes the toast), triggered from the client with `useTransition` (simple) or `useMutation` (optimistic, for cached lists), forms via TanStack Form + Zod. Mutation functions live in `lib/action/*.ts` and call `updateTag` with the same tag the corresponding `lib/data` fetch uses.
+
+Full pattern, rules, and variants (optimistic `useMutation`, the three list-write shapes, toast conventions, destructive actions): [`references/mutations.md`](references/mutations.md).
+Worked files: [`mutation.ts`](examples/mutation.ts), [`create-form.tsx`](examples/create-form.tsx), [`create-dialog.tsx`](examples/create-dialog.tsx).
 
 ## i18n, tests, telemetry, proxy
 
@@ -96,5 +95,6 @@ These are single, fixed locations at the app root, sibling to `app/`:
 - Putting a `"use client"` directive directly in `page.tsx` instead of extracting to `_components/`. → `page.tsx` stays server; move the interactive part out.
 - Building a form inside a route's `_components/` "for now." → Check whether another route needs the same resource form first; default to `components/<role>/<resource>/`.
 - Reaching for `components/` before checking `packages/ui`. → `packages/ui` is shared across the whole monorepo; always check it first.
-- Using `"use cache"` unconditionally. → It's only valid when cache components is enabled in `next.config.ts`.
+- Calling the typed API client directly from a client component instead of through a `lib/data`/`lib/action` function + `useQuery`/`useMutation`. → breaks hydration and cache invalidation.
 - Looking for shared translation strings in `packages/`. → i18n has no shared tier; each app owns its own messages.
+- Awaiting independent fetches in a `for`/`while` loop instead of `Promise.all`. → see [`references/fetching.md`](references/fetching.md).

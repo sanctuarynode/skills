@@ -1,9 +1,4 @@
----
-name: next-mutations
-description: Write data in a Next.js App Router app the canonical way — a server action that throws on failure, triggered from the client with useTransition (simple) or useMutation (optimistic), forms via TanStack Form + Zod, feedback via toast (Sonner). Use when the user adds a create/update/delete, a form + submit, says "mutate", "submit form", "optimistic update", "toast on success", "invalidate cache after a write", "rollback on error", or asks how to handle pending state or form validation. Pairs with `next-queries` for reads + cache tags. For file placement (where mutation code and forms live relative to routes/components), see `next-monorepo-pattern`.
----
-
-# Next.js + TanStack Query: mutations & forms
+# Mutations & forms: server action throws → toast
 
 Every write is two parts: a **server action that performs the write** and a **client trigger** that gives feedback via toast.
 
@@ -12,40 +7,20 @@ User submits
   └─▶ TanStack Form + Zod  validates onSubmit
         ├─ invalid ─▶ FieldError per field (no network call)
         └─ valid ───▶ pending (useTransition or useMutation)
-              └─▶ server action  createThing(scope, body)
+              └─▶ lib/action function  createThing(scope, body)
                     └─▶ typed API client (Eden) → backend
                           ├─ error ─▶ THROW human-readable message ─▶ catch → toast.error(message)
                           └─ ok ────▶ updateTag(scope:resource)  (invalidate cached reads)
                                         └─▶ toast.success → onSuccess?.() (close dialog)
 ```
 
-**Read it as:** the form validates locally first, so an invalid submit never hits the network. A valid submit runs the server action, which **throws** a human message on failure (that string becomes the toast); on success it `updateTag`s the read cache and the client toasts + closes.
+**Read it as:** the form validates locally first, so an invalid submit never hits the network. A valid submit runs the `lib/action` function, which **throws** a human message on failure (that string becomes the toast); on success it `updateTag`s the read cache and the client toasts + closes.
 
 ## Server action — throw on failure
 
-Mutation actions **throw** (they don't return `{ error }` like fetching actions). The thrown message is the toast text. Keep debug context server-side; never send it to the client. Mutations live in `lib/action/*.ts` (see `next-monorepo-pattern` for the full file-placement convention).
+Mutation functions **throw** (they don't return `{ error }` like `lib/data` functions). The thrown message is the toast text. Keep debug context server-side; never send it to the client. Mutations live in `lib/action/*.ts` — a route-local `action.ts` (used by only one route) follows the same throw/`updateTag` contract, it's just not promoted because nothing else needs it.
 
-```ts
-// lib/action/things.ts
-"use server";
-
-import { updateTag } from "next/cache";
-import { api } from "@/lib/api";
-import { log } from "@/lib/log";
-import type { CreateThing } from "@/lib/schema";
-
-export async function createThing(orgSlug: string, body: CreateThing) {
-  const { data, error } = await api.things.post(body);
-
-  if (error) {
-    log.error({ action: "createThing", scope: orgSlug, error }); // internal only
-    throw new Error("Failed to create thing. Please try again."); // → toast text
-  }
-
-  updateTag(`${orgSlug}:things`); // invalidate the read cache (see next-queries)
-  return data;
-}
-```
+The full worked files — [`mutation.ts`](../examples/mutation.ts), [`create-form.tsx`](../examples/create-form.tsx), [`create-dialog.tsx`](../examples/create-dialog.tsx) — are in [`../examples/`](../examples/) (each carries a `Place at:` comment with its real project path).
 
 ## Simple trigger — `useTransition`
 
@@ -80,79 +55,7 @@ export function CreateThingButton({ orgSlug }: { orgSlug: string }) {
 }
 ```
 
-**Never `useState` for `isPending`** — `useTransition` gives you the pending state for free.
-
-## Form — TanStack Form + Zod
-
-Every form validates with Zod via TanStack Form; submit inside `startTransition`.
-
-```tsx
-"use client";
-
-import { useTransition } from "react";
-import { useForm } from "@tanstack/react-form";
-import { toast } from "sonner";
-import { createThing } from "@/lib/action/things";
-import { createThingSchema } from "@/lib/schema";
-
-export function CreateThingForm({
-  orgSlug,
-  onSuccess,
-}: {
-  orgSlug: string;
-  onSuccess?: () => void;
-}) {
-  const [isPending, startTransition] = useTransition();
-
-  const form = useForm({
-    defaultValues: { name: "" },
-    validators: { onSubmit: createThingSchema },
-    onSubmit: ({ value }) => {
-      startTransition(async () => {
-        try {
-          await createThing(orgSlug, value);
-          toast.success("Thing created");
-          onSuccess?.();
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : "Something went wrong");
-        }
-      });
-    },
-  });
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        form.handleSubmit();
-      }}
-      className="flex flex-col gap-4"
-    >
-      <form.Field name="name">
-        {(field) => {
-          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-          return (
-            <Field data-invalid={isInvalid}>
-              <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-              <Input
-                id={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(e.target.value)}
-                aria-invalid={isInvalid}
-              />
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          );
-        }}
-      </form.Field>
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Saving…" : "Save"}
-      </Button>
-    </form>
-  );
-}
-```
+**Never `useState` for `isPending`** — `useTransition` gives you the pending state for free. See [`create-form.tsx`](../examples/create-form.tsx) for the same pattern combined with TanStack Form + Zod.
 
 ## Toast conventions (Sonner)
 
@@ -262,4 +165,4 @@ onSuccess: (next) => queryClient.setQueryData(KEY, next),
 
 ## Destructive actions
 
-Wrap delete/revoke behind a confirmation dialog before calling the server action. Then apply the **Remove** shape above (or a plain invalidate if the list isn't optimistic).
+Wrap delete/revoke behind a confirmation dialog before calling the `lib/action` function. Then apply the **Remove** shape above (or a plain invalidate if the list isn't optimistic).

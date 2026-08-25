@@ -41,6 +41,13 @@ When adding a key:
 2. **Add the same path to every locale file.**
 3. **Variables** use the ICU placeholder convention: `"Welcome, {name}"` called as `t("greet", { name })`. Plurals/selects use ICU syntax (`{count, plural, one {# item} other {# items}}`).
 
+## Every visible string is a key
+
+Not just body copy — button labels, placeholders, titles/descriptions, `aria-label`s, empty-state copy, and toast messages are all translation keys, never hardcoded literals.
+
+- **Server components** use `getTranslations`; **client components** use `useTranslations`.
+- Generic action labels (Edit, Delete, Cancel, Save, …) belong in a shared `common` namespace — reuse the existing key (e.g. `tc("edit")`) instead of re-adding a near-duplicate per feature.
+
 ## Per-locale translation notes
 
 - Keep product names, brand names, and proper nouns **untranslated**; translate the surrounding copy only.

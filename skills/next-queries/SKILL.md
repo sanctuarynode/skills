@@ -1,6 +1,6 @@
 ---
 name: next-queries
-description: Fetch data in a Next.js App Router app the canonical way — server-component prefetch + TanStack Query hydration + client useQuery on the SAME key. Use when the user adds a data read, a list/table page, a server action that fetches, or a useQuery hook; says "fetch X", "load data for", "prefetch", "hydrate", "why does my query refetch on first paint", "table blanks when I search"; or hits a hydration mismatch or a double round-trip. Pairs with `next-mutations` for writes + cache invalidation.
+description: Fetch data in a Next.js App Router app the canonical way — server-component prefetch + TanStack Query hydration + client useQuery on the SAME key. Use when the user adds a data read, a list/table page, a server action that fetches, or a useQuery hook; says "fetch X", "load data for", "prefetch", "hydrate", "why does my query refetch on first paint", "table blanks when I search"; or hits a hydration mismatch or a double round-trip. Pairs with `next-mutations` for writes + cache invalidation. For file placement (where fetching code lives relative to routes/components), see `next-monorepo-pattern`.
 ---
 
 # Next.js + TanStack Query: fetching
@@ -30,7 +30,8 @@ page.tsx (dynamic server component)
 ## Rules
 
 - `page.tsx` is a **dynamic server component** — no `'use cache'`, no `export const dynamic`. It reads the session/params and passes scope as an argument.
-- **Fetching** server actions use `'use cache'` + `cacheTag` + `cacheLife`; they receive everything as arguments and **never** read cookies/headers/session internally.
+- Fetching lives in `lib/data/*.ts` (see `next-monorepo-pattern` for the full file-placement convention).
+- **Fetching** server actions use `'use cache'` + `cacheTag` + `cacheLife` **only if `next.config.ts` has cache components enabled** — check before adding these directives, don't assume they're always on. They receive everything as arguments and **never** read cookies/headers/session internally.
 - Client components read through `useQuery` calling the same server action — **never** call the API client directly from the client.
 - Every `useQuery` **must** handle `isPending` and render a skeleton.
 - Server actions never leak raw errors — catch, `log.error(...)`, return a human-readable `{ error }` string.
@@ -38,7 +39,7 @@ page.tsx (dynamic server component)
 ## Step 1 — fetching server action
 
 ```ts
-// actions/things.ts
+// lib/data/things.ts
 "use server";
 
 import { cacheLife, cacheTag } from "next/cache";
@@ -67,7 +68,7 @@ import { headers } from "next/headers";
 import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { auth } from "@/lib/auth";
 import { getQueryClient } from "@/lib/query";
-import { getThings } from "@/actions/things";
+import { getThings } from "@/lib/data/things";
 import { ThingTable } from "./_components/thing-table";
 
 export default async function Page() {
@@ -94,7 +95,7 @@ export default async function Page() {
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getThings } from "@/actions/things";
+import { getThings } from "@/lib/data/things";
 
 export function ThingTable({ orgSlug }: { orgSlug: string }) {
   const { data, error, isPending } = useQuery({

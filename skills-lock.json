@@ -1,11 +1,11 @@
 {
   "version": 1,
   "skills": {
-    "writing-great-skills": {
-      "source": "mattpocock/skills",
+    "writing-skills": {
+      "source": "obra/superpowers",
       "sourceType": "github",
-      "skillPath": "skills/productivity/writing-great-skills/SKILL.md",
-      "computedHash": "314351c66f43189bd033b35ef36fb7fd2ebcc5fd8bea8b2796632e98fe82ded7"
+      "skillPath": "skills/writing-skills/SKILL.md",
+      "computedHash": "5f255b9c0d50d6d7eafa41b245b9308799321c5222bc68b1be2499f50ed82713"
     }
   }
 }

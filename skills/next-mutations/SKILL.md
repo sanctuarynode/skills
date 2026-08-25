@@ -1,6 +1,6 @@
 ---
 name: next-mutations
-description: Write data in a Next.js App Router app the canonical way — a server action that throws on failure, triggered from the client with useTransition (simple) or useMutation (optimistic), forms via TanStack Form + Zod, feedback via toast (Sonner). Use when the user adds a create/update/delete, a form + submit, says "mutate", "submit form", "optimistic update", "toast on success", "invalidate cache after a write", "rollback on error", or asks how to handle pending state or form validation. Pairs with `next-queries` for reads + cache tags.
+description: Write data in a Next.js App Router app the canonical way — a server action that throws on failure, triggered from the client with useTransition (simple) or useMutation (optimistic), forms via TanStack Form + Zod, feedback via toast (Sonner). Use when the user adds a create/update/delete, a form + submit, says "mutate", "submit form", "optimistic update", "toast on success", "invalidate cache after a write", "rollback on error", or asks how to handle pending state or form validation. Pairs with `next-queries` for reads + cache tags. For file placement (where mutation code and forms live relative to routes/components), see `next-monorepo-pattern`.
 ---
 
 # Next.js + TanStack Query: mutations & forms
@@ -23,10 +23,10 @@ User submits
 
 ## Server action — throw on failure
 
-Mutation actions **throw** (they don't return `{ error }` like fetching actions). The thrown message is the toast text. Keep debug context server-side; never send it to the client.
+Mutation actions **throw** (they don't return `{ error }` like fetching actions). The thrown message is the toast text. Keep debug context server-side; never send it to the client. Mutations live in `lib/action/*.ts` (see `next-monorepo-pattern` for the full file-placement convention).
 
 ```ts
-// actions/things.ts
+// lib/action/things.ts
 "use server";
 
 import { updateTag } from "next/cache";
@@ -56,7 +56,7 @@ For one-off mutations with no cached list to update, use React 19's `useTransiti
 
 import { useTransition } from "react";
 import { toast } from "sonner";
-import { createThing } from "@/actions/things";
+import { createThing } from "@/lib/action/things";
 
 export function CreateThingButton({ orgSlug }: { orgSlug: string }) {
   const [isPending, startTransition] = useTransition();
@@ -92,7 +92,7 @@ Every form validates with Zod via TanStack Form; submit inside `startTransition`
 import { useTransition } from "react";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
-import { createThing } from "@/actions/things";
+import { createThing } from "@/lib/action/things";
 import { createThingSchema } from "@/lib/schema";
 
 export function CreateThingForm({

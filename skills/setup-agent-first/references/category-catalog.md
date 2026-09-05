@@ -16,6 +16,7 @@ The single batched question for a fresh setup run. Pre-check/pre-fill options fr
 | Diagrams (mermaid) | proposed only if domain complexity warrants it (multiple services, non-trivial data model found) | |
 | Domain-model explanation doc | proposed only if a clear business domain exists — skip for a CLI tool, library, or infra-only repo | must pass the completeness check in SKILL.md § Phase 4 before it's considered done, regardless of scan depth |
 | "Working with an agent" section | proposed on | Never a standalone `CONTRIBUTING.md` generated from scratch — appended to the existing `CONTRIBUTING.md` if one exists, else to `README.md`. Plain `##` heading, no markers (it's prose for a human reader). See `templates.md#working-with-an-agent-section`. |
+| Documentation index table | proposed on | Keyword → doc routing table appended inside `AGENTS.md`'s marker block, separate from `docs/README.md`. See `templates.md#documentation-index-inside-agentsmd`. Some rows available on light scan (dependency-inferred), most need deep scan (code-pattern-inferred) — see that template section for the split. |
 | **Existing module/service READMEs** | one row per file Phase 1 found beyond the root README | See "Existing module READMEs" below — never silently skip one. |
 
 ### Existing module READMEs
@@ -27,15 +28,23 @@ Phase 1 finds these by globbing subdirectories, not just the root. **Every one f
 
 Whichever option, **every found README ends up either linked from the docs index or physically moved — none are left untouched and unindexed.** That's the exact failure mode this section exists to close: a module README found during detection but never mentioned again anywhere in the generated docs.
 
+### Monorepo sub-projects
+
+When Phase 1 classifies the repo as a monorepo (see `references/metadata-sources.md`), `domain-model.md` must name every detected sub-project individually — its name, its ecosystem/stack, and its metadata file path — not just the top-level directories a plain listing would show. No sub-project gets its own `AGENTS.md`; the root `AGENTS.md` stays the single source of truth, and this coverage lives in `domain-model.md` instead. This is the same completeness bar as SKILL.md § Phase 4's domain-model check, applied to metadata-detected sub-projects rather than directory names alone.
+
 ## B. Agent-context files (per detected/selected runtime, plus None)
 
-Detect existing files in Phase 1. For each one that's *missing*, ask which runtimes the user actually uses (don't assume — a repo with no agent files yet could target any subset) — include a "None beyond AGENTS.md" option for a user who only wants the universal file.
+Phase 1 detects runtimes from both files (`CLAUDE.md`, `.cursor/rules`, etc.) and their supporting directories (`.claude/`, `.cursor/`, `.codex/`, `.opencode/`, `.agents/`, `.gemini/`, `.github/`) — this replaces asking "which runtimes do you use." Three outcomes, no question in two of them:
+
+- **No runtime detected at all** — write straight to `AGENTS.md`, no §B question.
+- **A runtime detected but its context file is missing or an empty/pointer-only stub** — no question either: generate `AGENTS.md` plus a thin pointer file for it, per the default below.
+- **A runtime detected with a context file that already has substantive content** — this is the only case that asks, and it's one batched question per such file: *"Consolidate `<file>`'s content into `AGENTS.md` (making `<file>` a thin pointer), or leave `<file>` as-is and add `AGENTS.md` as a separate generic layer?"*
 
 Every non-`AGENTS.md` file (`CLAUDE.md`, `GEMINI.md`, `.cursor/rules`, `.github/copilot-instructions.md`) is generated as a **thin pointer that imports/references `AGENTS.md`** — never a duplicate copy of its content. A 2–5 line file whose only job is "read AGENTS.md."
 
 ## C. Automation layer (offered per targeted agent runtime — plus None)
 
-Not Claude Code-exclusive: subagents and commands are offered for **every runtime targeted in §B** (existing or newly selected), each generated in that runtime's own native format — see SKILL.md § Automation layer targets any runtime, and the known-shapes starting reference at **[`references/agent-runtime-shapes.md`](agent-runtime-shapes.md)**, for how to derive the file shape for a runtime other than Claude Code. `.claude/agents/`/`.claude/commands/` is the reference example, not the only supported shape — and a runtime's rules/instructions file (`.cursor/rules/*.mdc`, `.github/instructions/**/*.instructions.md`, etc.) is never the command-equivalent, it's the same context-file role Phase 4 §B already covers.
+Not Claude Code-exclusive: subagents and commands are offered for every runtime in Phase 1's **detected set** (pre-checked in the batch). If Phase 1 detected zero runtimes, that's the one case §C asks explicitly which runtime(s) to generate for — there's no signal to derive from. Each is generated in that runtime's own native format — see SKILL.md § Automation layer targets any runtime, and the known-shapes starting reference at **[`references/agent-runtime-shapes.md`](agent-runtime-shapes.md)**, for how to derive the file shape for a runtime other than Claude Code. `.claude/agents/`/`.claude/commands/` is the reference example, not the only supported shape — and a runtime's rules/instructions file (`.cursor/rules/*.mdc`, `.github/instructions/**/*.instructions.md`, etc.) is never the command-equivalent, it's the same context-file role Phase 4 §B already covers.
 
 Include a "None" option covering the whole group for a user who only wants the documentation layer. Unlike the rest of this group, `polish` and CodeGraph don't require deep scan — offer this group (with those two available) on *either* scan depth; the remaining items only appear once deep scan has actually run.
 
@@ -61,3 +70,24 @@ Not shipped as templates — proposed as *capabilities*, generated per-repo at e
 - New docs added since last run that aren't in the index yet? → offer to sync.
 - New repeated patterns found (if doing a deep rescan) worth a subagent? → offer to propose.
 - Any doc referenced in the index that no longer exists on disk, or vice versa? → offer to fix (this is the exact class of bug a prior manual setup can drift into).
+
+(See SKILL.md § Idempotency check for the git-log-driven checks — new dependencies and repeated new-file patterns since the last run — that additionally scope this interview.)
+
+## Deciding: doc vs subagent vs mandatory-dispatch
+
+A concrete checklist for what a repeated pattern becomes, instead of a judgment call:
+
+**Doc only (a row in the documentation-index table, § A)** — the pattern is knowledge about how to write code correctly, with no procedure beyond "read this, then write code matching it."
+
+**Subagent/command (optional capability, § C)** — all three must be true:
+1. **Multi-step** — the task is ≥2 sequential steps, or requires synthesizing information from more than one source (not just "read a convention, then write code by hand").
+2. **Repeated** — found ≥2 times in a deep scan, or belongs to a category of action that happens on every instance of its kind (every commit, every PR, every migration) even from a single observed example.
+3. **Rawan drift** — doing it by hand has enough free variation that two people (or two sessions) would plausibly do it differently.
+
+**Mandatory-dispatch tier** — all of the above, plus at least one of:
+4. **Downstream breakage** — skipping it or doing it inconsistently breaks something outside the file being worked on (a stale index, a tool that fails to parse the result, a broken cross-reference/automation).
+5. **No-exception cadence** — it happens on literally every instance of its kind, never "only sometimes."
+
+Mandatory-dispatch requires two things when generated:
+- The subagent's own frontmatter `description` is written imperatively ("MUST be used for...") so Claude Code auto-triggers it.
+- The runtime's context file (`AGENTS.md`, or the runtime-native equivalent for non-Claude-Code targets) gets an explicit rule naming the exact file path: *"Every `<action>` MUST go through the `<name>` subagent (`<path/to/file>`), never do it by hand."* Runtimes with no auto-dispatch mechanism read that file directly as the actual procedure — the AGENTS.md rule is what makes it mandatory for them too, not just documentation.
